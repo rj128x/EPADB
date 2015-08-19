@@ -56,7 +56,7 @@ namespace EPADB {
                 string tabName = String.Format("data_{0}_tabs", ss);
                 SqlCommand com = con.CreateCommand();
                 Status.Text = "Чтение списка таблиц с данными " + ss;
-                com.CommandText = "Select * from " + tabName;
+                com.CommandText = "Select * from " + tabName+" order by time_beg";
                 SqlDataReader reader = com.ExecuteReader();
                 while (reader.Read()) {
                     DateTime ds = EPADB.GetDate(reader.GetInt32(1));
@@ -113,6 +113,7 @@ namespace EPADB {
                             }
                             catch { }
                         }
+                        times.Sort();
                         reader.Close();                        
 
                         foreach (string kks in SignalsBySubSys[ss]) {

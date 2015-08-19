@@ -37,8 +37,9 @@ namespace EPADB {
         }
 
         private void button2_Click(object sender, EventArgs e) {
+
             List<SignalInfo> resAsu = new List<SignalInfo>();
-            epa.findText(epa.ASURoot, txtSearch.Text.ToUpper(), resAsu);
+            epa.findText(epa.ASURoot, txtSearch.Text.ToUpper(), resAsu);            
             if (resAsu.Count > 0) {
                 treeAsu.CollapseAll();
                 epa.selectTree(treeAsu.Nodes[0], resAsu);

@@ -436,6 +436,7 @@ namespace EPADB {
                 foreach (SignalInfo ch in root.Children) {
                     if (ch.KKS.Contains(text) || ch.FullNameUp.Contains(text) || (ch.ShortNameUp.Contains(text))) {
                         res.Add(ch);
+                        Status.Text = String.Format("Найдено {0} сигналов", res.Count);
                     }
                     findText(ch, text, res);
                 }
