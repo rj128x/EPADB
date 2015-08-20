@@ -23,6 +23,7 @@ namespace EPADB {
         public int idLevel { get; set; }
         public string kksDev { get; set; }
         public bool isLastTreeNode { get; set; }
+        public int numSign { get; set; }
     }
 
     public class SignalGroup {
@@ -52,6 +53,9 @@ namespace EPADB {
         public Dictionary<string, string> TechASUDict;
         public Dictionary<string, bool> DictAlgo;
         public Dictionary<int, string> SubSystems;
+        public Dictionary<int, string> SubSysTables;
+        public Dictionary<string, int> NumSignals;
+        public bool UseNumSignals;
 
         public void readASU() {
             SqlConnection con = DBSettings.getConnection();
@@ -72,9 +76,16 @@ namespace EPADB {
                 si.valueStep = reader.GetString(4);
                 si.kksDev = reader.GetString(5);
                 si.idLevel = reader.GetInt32(6);
+                try {
+                    si.numSign = NumSignals[si.KKS];
+                }
+                catch { }
                 asufull.Add(si);
             }
             reader.Close();
+            NumSignals.Clear();
+            SubSysTables.Clear();
+
 
             Status.Text = "Чтение АСУ дерева из БД";
             Dictionary<string, string> asu_tree = new Dictionary<string, string>();
@@ -202,6 +213,7 @@ namespace EPADB {
 
         public void readSubSystems() {
             SubSystems = new Dictionary<int, string>();
+            SubSysTables = new Dictionary<int, string>();
             SqlConnection con = DBSettings.getConnection();
             con.Open();
             SqlCommand com = con.CreateCommand();
@@ -211,13 +223,35 @@ namespace EPADB {
             while (reader.Read()) {
                 int subSys = reader.GetInt32(0);
                 string name = reader.GetString(3);
+                string tab = reader.GetString(2);
                 try {
                     SubSystems.Add(subSys, name);
+                    SubSysTables.Add(subSys, tab);
                 }
                 catch { }
             }
             reader.Close();
+
+            NumSignals = new Dictionary<string, int>();
+            foreach (string tabName in SubSysTables.Values) {
+                Status.Text = "Чтение подсистем "+tabName;
+                try {
+                    com.CommandText = String.Format("Select * from {0}", tabName);
+                    reader = com.ExecuteReader();
+                    while (reader.Read()) {
+                        int num = reader.GetInt32(1);
+                        string kks = reader.GetString(0);
+                        NumSignals.Add(kks, num);
+                    }
+                }
+                finally {
+                    reader.Close();
+                }
+            }
+            
             con.Close();
+
+
         }
 
         public void readkksDev() {

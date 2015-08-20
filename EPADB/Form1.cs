@@ -102,7 +102,7 @@ namespace EPADB {
                     foreach (string kksAsu in kksAsuL) {
                         try {
                             SignalInfo siAsu = epa.FindSignal(epa.ASURoot, kksAsu, null);
-                            richTextBox2.Text += String.Format("FullName: {0} \n ShortName:{1} \n KKS:{2}\nSubSys:{3}\n", siAsu.FullName, siAsu.ShortName, siAsu.KKS, epa.getSubSysName(siAsu));
+                            richTextBox2.Text += String.Format("FullName: {0} \n ShortName:{1} \n KKS:{2}\nSubSys:{3}\n numSign:{4}\n", siAsu.FullName, siAsu.ShortName, siAsu.KKS, epa.getSubSysName(siAsu),siAsu.numSign);
                         }
                         catch { }
                     }
@@ -118,7 +118,7 @@ namespace EPADB {
             try {
                 string kks = treeAsu.SelectedNode.Name;
                 SignalInfo si = epa.FindSignal(epa.ASURoot, kks, null);
-                richTextBox2.Text = String.Format("FullName: {0} \n ShortName:{1} \n KKS:{2}\nSubSys:{3}\n", si.FullName, si.ShortName, si.KKS, epa.getSubSysName(si));
+                richTextBox2.Text = String.Format("FullName: {0} \n ShortName:{1} \n KKS:{2}\nSubSys:{3}\n numSign:{4}\n", si.FullName, si.ShortName, si.KKS, epa.getSubSysName(si),si.numSign);
                 try {
                     string kksTechStr = epa.ASUTechDict[kks];
                     richTextBox1.Text += String.Format("link_KKS:{0}\n", kksTechStr);
@@ -138,11 +138,11 @@ namespace EPADB {
 
         private void Form1_Shown(object sender, EventArgs e) {
             epa.readkksDev();
+            epa.readSubSystems();
             epa.readASU();
             epa.readTech();
             epa.linkSignals();
-            epa.readAlgoritms();
-            epa.readSubSystems();
+            epa.readAlgoritms();            
             statusLabel.Text = "Чтение завершено";
             TreeNode nodeASU = epa.displayTree(epa.ASURoot);
             TreeNode nodeTECH = epa.displayTree(epa.TechRoot);
@@ -308,6 +308,10 @@ namespace EPADB {
                 }
                 listBox2.Items.Add(name);
             }
+        }
+
+        private void chkNumSign_CheckedChanged(object sender, EventArgs e) {
+            epa.UseNumSignals = chkNumSign.Checked;
         }
 
 

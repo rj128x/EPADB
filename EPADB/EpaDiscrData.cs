@@ -15,7 +15,7 @@ namespace EPADB {
         public List<string> tables { get; set; }
         public Dictionary<string, int> subSystemsByTables { get; set; }
         public Dictionary<int, List<string>> tablesState { get; set; }
-        public Dictionary<int, List<string>> SignalsBySubSys { get; set; }
+        public Dictionary<int, List<SignalInfo>> SignalsBySubSys { get; set; }
         public ToolStripStatusLabel Status;
         
 
@@ -27,13 +27,13 @@ namespace EPADB {
         }
 
         public void processSignals() {
-            SignalsBySubSys = new Dictionary<int, List<string>>();
+            SignalsBySubSys = new Dictionary<int, List<SignalInfo>>();
             foreach (SignalInfo si in epa.SelectedDiscrSignals) {
                 if (si.discr) {
                     if (!SignalsBySubSys.ContainsKey(si.subSys)) {
-                        SignalsBySubSys.Add(si.subSys, new List<string>());
+                        SignalsBySubSys.Add(si.subSys, new List<SignalInfo>());
                     }
-                    SignalsBySubSys[si.subSys].Add(si.KKS);
+                    SignalsBySubSys[si.subSys].Add(si);
                 }
             }
         }
@@ -126,10 +126,17 @@ namespace EPADB {
                     if (epa.SelectedDiscrSignals.Count > 0) {
                         int ss = subSystemsByTables[tab];
                         List<string> kksList = new List<string>();
-                        foreach (string kks in SignalsBySubSys[ss]) {
-                            kksList.Add("'" + kks + "'");
+                        List<int> numsList = new List<int>();
+                        foreach (SignalInfo si in SignalsBySubSys[ss]) {
+                            kksList.Add("'" + si.KKS + "'");
+                            numsList.Add(si.numSign);
                         }
-                        com.CommandText += String.Format(" and kks_id_signal in ({0})", String.Join(",", kksList));
+                        if (!epa.UseNumSignals) {
+                            com.CommandText += String.Format(" and kks_id_signal in ({0})", String.Join(",", kksList));
+                        }
+                        else {
+                            com.CommandText += String.Format(" and num_sign in ({0})", String.Join(",", numsList));
+                        }
                     }
                     SqlDataReader reader = com.ExecuteReader();
                     while (reader.Read()) {
@@ -220,16 +227,26 @@ namespace EPADB {
                         if ((Int32)timeObj <=0)
                             continue;
                         List<string> kksQList = new List<string>();
-                        foreach (string kks in SignalsBySubSys[subSys]) {
+                        List<int> numsQList = new List<int>();
+                        foreach (SignalInfo si in SignalsBySubSys[subSys]) {
                             try {                                
-                                kksQList.Add("'" + kks + "'");
-                                if (kksQList.Count < 10 && kks != SignalsBySubSys[subSys].Last())
+                                kksQList.Add("'" + si.KKS + "'");
+                                numsQList.Add(si.numSign);
+
+                                if (kksQList.Count < 10 && si != SignalsBySubSys[subSys].Last())
                                     continue;
                                 string kksQ = string.Join(",", kksQList);
+                                string numsQ = string.Join(",", numsQList);
                                 kksQList.Clear();
+                                numsQList.Clear();
 
                                 Status.Text = Status.Text+"...|";
-                                com.CommandText = String.Format("Select  time_page,time,kks_id_signal,mcs,data,bsrc from {0} where time_page={1} and kks_id_signal in ({2})", table, timeObj, kksQ);
+                                if (!epa.UseNumSignals) {
+                                    com.CommandText = String.Format("Select  time_page,time,kks_id_signal,mcs,data,bsrc from {0} where time_page={1} and kks_id_signal in ({2})", table, timeObj, kksQ);
+                                }
+                                else {
+                                    com.CommandText = String.Format("Select  time_page,time,kks_id_signal,mcs,data,bsrc from {0} where time_page={1} and num_sign in ({2})", table, timeObj, numsQ);
+                                }
                                 SqlDataReader reader = com.ExecuteReader();
                                 while (reader.Read()) {
 

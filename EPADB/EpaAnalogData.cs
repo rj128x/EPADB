@@ -13,7 +13,7 @@ namespace EPADB {
         public DateTime DateEnd { get; set; }
         public EPADB epa { get; set; }
         public List<string> tables { get; set; }
-        public Dictionary<int, List<string>> SignalsBySubSys { get; set; }
+        public Dictionary<int, List<SignalInfo>> SignalsBySubSys { get; set; }
         public ToolStripStatusLabel Status;
         public Dictionary<string, int> subSystemsByTables { get; set; }
         public int Step { get; set; }
@@ -36,13 +36,13 @@ namespace EPADB {
         }
 
         public void processSignals() {
-            SignalsBySubSys = new Dictionary<int, List<string>>();
+            SignalsBySubSys = new Dictionary<int, List<SignalInfo>>();
             foreach (SignalInfo si in epa.SelectedAnalogSignals) {
                 if (!si.discr) {
                     if (!SignalsBySubSys.ContainsKey(si.subSys)) {
-                        SignalsBySubSys.Add(si.subSys, new List<string>());
+                        SignalsBySubSys.Add(si.subSys, new List<SignalInfo>());
                     }
-                    SignalsBySubSys[si.subSys].Add(si.KKS);
+                    SignalsBySubSys[si.subSys].Add(si);
                 }
             }
         }
@@ -91,6 +91,7 @@ namespace EPADB {
             }
 
             List<string> kksQList = new List<string>();
+            List<int> numSignQList = new List<int>();
             List<int> timesQList = new List<int>();
             Dictionary<int, int> timesDict = new Dictionary<int, int>();
             List<int> timesList = new List<int>();
@@ -116,13 +117,16 @@ namespace EPADB {
                         times.Sort();
                         reader.Close();                        
 
-                        foreach (string kks in SignalsBySubSys[ss]) {
-                            kksQList.Add("'" + kks + "'");
-                            if (kksQList.Count() <= 10 && kks != SignalsBySubSys[ss].Last())
+                        foreach (SignalInfo si in SignalsBySubSys[ss]) {
+                            kksQList.Add("'" + si.KKS + "'");
+                            numSignQList.Add(si.numSign);
+                            if (kksQList.Count() <= 10 && si != SignalsBySubSys[ss].Last())
                                 continue;
                             string kksQ=String.Join(",", kksQList);
+                            string numQ = String.Join(",", numSignQList);
                             kksQList.Clear();
                             timesDict.Clear();
+                            numSignQList.Clear();
                             timesQList.Clear();
 
                             foreach (int t in Data.Keys) {
@@ -140,8 +144,14 @@ namespace EPADB {
 
                                 try {
                                     com = con.CreateCommand();
-                                    com.CommandText = String.Format("Select kks_id_signal,time_page,data from {0} where time_page in ({2}) and kks_id_signal in ({1})", table, kksQ, timesQ);
+                                    //com.CommandText = String.Format("Select kks_id_signal,time_page,data from {0} where time_page in ({2}) and kks_id_signal in ({1})", table, kksQ, timesQ);
                                     //com.CommandText = String.Format("Select kks_id_signal,time_page,data from {0} where time_page={2} and kks_id_signal = '{1}'", table, kks, valT);
+                                    if (!epa.UseNumSignals) {
+                                        com.CommandText = String.Format("Select kks_id_signal,time_page,data from {0} where time_page in ({2}) and kks_id_signal in ({1})", table, kksQ, timesQ);
+                                    }
+                                    else {
+                                        com.CommandText = String.Format("Select kks_id_signal,time_page,data from {0} where time_page in ({2}) and num_sign in ({1})", table, numQ, timesQ);
+                                    }
 
                                     Status.Text += "---|";
                                     reader = com.ExecuteReader();
